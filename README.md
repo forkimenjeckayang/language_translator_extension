@@ -1,6 +1,6 @@
 # language_translator_extension
 
-A web browser extension which as of now can be used to translate from one language to another. It supports four languages currenty French, English , German and Spanish. You simply copy text which you want to translate, paste it into the text area , selct your langaue and click the traslate button. 
+A web browser extension which as of now can be used to translate from one language to another. It supports four languages currenty French, English , German and Spanish. You simply copy text which you want to translate, paste it into the text area , select your langaue and click the traslate button. 
 
 It uses [Libre Translate](https://hub.docker.com/r/libretranslate/libretranslate) an open source project to handle the transaltions . This translation engine is sef hosted on AWS as an EC2 instance which can be accessed publicly.
 
