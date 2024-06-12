@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Show loading indicator
         translatedTextElem.innerText = 'Translating...';
   
-        const url = 'http://localhost:5000/translate';
+        const url = 'http://44.203.140.162:5000/translate';
   
         const data = {
             q: inputText,
