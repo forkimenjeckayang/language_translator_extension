@@ -1,0 +1,78 @@
+name: Create or Update Release
+
+on:
+  push:
+    branches:
+      - main  # Adjust the branch as needed
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Check if tag exists locally
+        id: check_tag_local
+        run: |
+          if git rev-parse v1.0.0 >/dev/null 2>&1
+          then
+            echo "Tag exists locally"
+            echo "::set-output name=tag_exists_local::true"
+          else
+            echo "Tag does not exist locally"
+            echo "::set-output name=tag_exists_local::false"
+          fi
+
+      - name: Check if tag exists remotely
+        id: check_tag_remote
+        run: |
+          if git ls-remote --tags origin | grep refs/tags/v1.0.0 >/dev/null 2>&1
+          then
+            echo "Tag exists remotely"
+            echo "::set-output name=tag_exists_remote::true"
+          else
+            echo "Tag does not exist remotely"
+            echo "::set-output name=tag_exists_remote::false"
+          fi
+
+      - name: Create Tag
+        if: steps.check_tag_local.outputs.tag_exists_local == 'false' && steps.check_tag_remote.outputs.tag_exists_remote == 'false'
+        run: git tag v1.0.0  # Replace with your desired tag name
+
+      - name: Push Tag
+        if: steps.check_tag_local.outputs.tag_exists_local == 'false' && steps.check_tag_remote.outputs.tag_exists_remote == 'false'
+        env:
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          git remote set-url origin https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/${{ github.repository }}.git
+          git push --tags
+
+      - name: Create or Update Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v1.0.0  # Replace with the tag you created
+          release_name: Release v1.0.0  # Replace with your desired release name
+          body: |
+            Release notes for v1.0.0
+            - Feature 1 implemented
+            - Basic feature to input text in the text field
+            - Select Langauge and click the translate button to get the translated text
+        continue-on-error: true
+
+      - name: Update Existing Release
+        if: failure()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RELEASE_ID=$(curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ github.repository }}/releases/tags/v1.0.0 | jq -r '.id')
+          curl -X PATCH -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID \
+          -d '{"tag_name": "v1.0.0", "name": "Release v1.0.0", "body": "Release notes for v1.0.0\n- Feature 1 implemented\n- Bug fixes"}'
