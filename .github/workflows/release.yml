@@ -5,61 +5,23 @@ on:
     branches:
       - main  # Trigger on push to the main branch
 
+name: Create Release
+
 jobs:
   build:
     name: Create Release
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2  # Checkout the repository
-
-      - name: Set up Git
-        run: |
-          git config --global user.name 'github-actions'
-          git config --global user.email 'github-actions@github.com'
-
-      - name: Create Tag
-        id: create_tag
-        run: |
-          TAG="v$(date +'%Y.%m.%d-%H.%M.%S')"
-          git tag $TAG
-          git push origin $TAG
-        env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-
-      - name: Generate Release Notes
-        id: generate_notes
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const { context, github } = require('@actions/github');
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const tag = context.ref.replace('refs/tags/', '');
-
-            const { data: commits } = await github.repos.listCommits({
-              owner,
-              repo,
-              sha: tag,
-              per_page: 100
-            });
-
-            let body = 'Changes in this Release\n';
-            for (const commit of commits) {
-              body += `- ${commit.commit.message}\n`;
-            }
-
-            return body;
-
+        uses: actions/checkout@v2
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN}}  # GitHub token provided by Actions
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
-          tag_name: ${{ steps.create_tag.outputs.TAG }}  # Use the created tag name
-          release_name: Release ${{ steps.create_tag.outputs.TAG }}  # Name the release
-          body: ${{ steps.generate_notes.outputs.result }}  # Use generated release notes
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+
           draft: false
           prerelease: false
