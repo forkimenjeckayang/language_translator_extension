@@ -12,13 +12,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # You may need additional setup steps depending on your project's needs
+      # Set up Git with PAT for authentication
+      - name: Set up Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Create Tag
         run: git tag v1.0.0  # Replace with your desired tag name
 
       - name: Push Tag
-        run: git push --tags
+        env:
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          git remote set-url origin https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/${{ github.repository }}.git
+          git push --tags
 
       - name: Create Release
         id: create_release
@@ -32,4 +40,3 @@ jobs:
             Release notes for v1.0.0
             - Feature 1 implemented
             - Bug fixes
-
