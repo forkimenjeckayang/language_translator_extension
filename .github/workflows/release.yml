@@ -1,49 +1,65 @@
-name: Create Source Code Package
+name: Create Release
 
 on:
   push:
     branches:
-      - main
+      - main  # Trigger on push to the main branch
 
 jobs:
-  create_release:
+  build:
+    name: Create Release
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2  # Checkout the repository
 
       - name: Set up Git
         run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
 
-      - name: Get the current date and time
-        id: datetime
-        run: echo "RELEASE_TIME=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV
-
-      - name: Create a source code package
+      - name: Create Tag
+        id: create_tag
         run: |
-          mkdir -p release
-          git archive -o release/source-code-${{ env.RELEASE_TIME }}.zip HEAD
+          TAG="v$(date +'%Y.%m.%d-%H.%M.%S')"
+          git tag $TAG
+          git push origin $TAG
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate Release Notes
+        id: generate_notes
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { context, github } = require('@actions/github');
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const tag = context.ref.replace('refs/tags/', '');
+
+            const { data: commits } = await github.repos.listCommits({
+              owner,
+              repo,
+              sha: tag,
+              per_page: 100
+            });
+
+            let body = 'Changes in this Release\n';
+            for (const commit of commits) {
+              body += `- ${commit.commit.message}\n`;
+            }
+
+            return body;
 
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub token provided by Actions
         with:
-          tag_name: v${{ env.RELEASE_TIME }}
-          release_name: Release v${{ env.RELEASE_TIME }}
+          tag_name: ${{ steps.create_tag.outputs.TAG }}  # Use the created tag name
+          release_name: Release ${{ steps.create_tag.outputs.TAG }}  # Name the release
+          body: ${{ steps.generate_notes.outputs.result }}  # Use generated release notes
           draft: false
           prerelease: false
-
-      - name: Upload Source Code Package
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: release/source-code-${{ env.RELEASE_TIME }}.zip
-          asset_name: source-code-${{ env.RELEASE_TIME }}.zip
-          asset_content_type: application/zip
