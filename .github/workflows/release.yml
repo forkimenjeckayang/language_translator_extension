@@ -64,7 +64,8 @@ jobs:
           body: |
             Release notes for v1.0.0
             - Feature 1 implemented
-            - Bug fixes
+            - Basic feature to input text in the text field
+            - Select Langauge and click the translate button to get the translated text
         continue-on-error: true
 
       - name: Update Existing Release
