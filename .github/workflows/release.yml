@@ -12,18 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install GitHub CLI
-        uses: google/github-actions@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Create Release
-        run: |
-          gh release create "$GITHUB_REF" \
-            --repo="$GITHUB_REPOSITORY" \
-            --title="${GITHUB_REPOSITORY#*/} ${GITHUB_REF#v}" \
-            --generate-notes
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}  # Optional: Customize the release name
+          body: "Automatic release for tag ${{ github.ref }}"  # Optional: Release description
