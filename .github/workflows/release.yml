@@ -1,0 +1,49 @@
+name: Create Source Code Package
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  create_release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Git
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Get the current date and time
+        id: datetime
+        run: echo "RELEASE_TIME=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_ENV
+
+      - name: Create a source code package
+        run: |
+          mkdir -p release
+          git archive -o release/source-code-${{ env.RELEASE_TIME }}.zip HEAD
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ env.RELEASE_TIME }}
+          release_name: Release v${{ env.RELEASE_TIME }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Source Code Package
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: release/source-code-${{ env.RELEASE_TIME }}.zip
+          asset_name: source-code-${{ env.RELEASE_TIME }}.zip
+          asset_content_type: application/zip
